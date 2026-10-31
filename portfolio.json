@@ -1,0 +1,39 @@
+{
+    "total_capital_hkd": 300000.0,
+    "risk_free_rate": 0.0325,
+    "max_single_position_pct": 0.35,
+    "min_adv_hkd": 5000000.0,
+    "alloc_method": "hrp",
+    "cov_estimator": "ledoit_wolf",
+    "max_turnover": 0.4,
+    "broker_comm_rate": 0.0,
+    "min_broker_comm_hkd": 15.0,
+    "almgren_gamma": 0.35,
+    "num_backtest_trials": 5,
+    "holdings": [
+        {
+            "ticker": "3690.HK",
+            "name": "3690.HK",
+            "lot_size": 100,
+            "shares": 200,
+            "entry_price": 0.0,
+            "short_eligible": true
+        },
+        {
+            "ticker": "3416.HK",
+            "name": "3416.HK",
+            "lot_size": 100,
+            "shares": 1500,
+            "entry_price": 0.0,
+            "short_eligible": false
+        },
+        {
+            "ticker": "0700.HK",
+            "name": "0700.HK",
+            "lot_size": 100,
+            "shares": 100,
+            "entry_price": 0.0,
+            "short_eligible": true
+        }
+    ]
+}
