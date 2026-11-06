@@ -35,5 +35,8 @@
             "entry_price": 0.0,
             "short_eligible": true
         }
-    ]
+    ],
+    "enable_futu": false,
+    "futu_host": "127.0.0.1",
+    "futu_port": 11111
 }
