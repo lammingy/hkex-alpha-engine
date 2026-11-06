@@ -526,6 +526,29 @@ def compute_active_daily_returns(
 # ============================================================================
 # Macro Regime & Fundamental Data Pipelines
 # ============================================================================
+def fetch_realtime_spot_price(ticker: str) -> float | None:
+    """
+    Fetch the latest real-time / near-real-time spot quote for a HK index or stock
+    using yfinance fast_info or regularMarketPrice rather than waiting for daily candle consolidation.
+    """
+    for cand in get_candidate_tickers(ticker):
+        try:
+            tk = yf.Ticker(cand)
+            fast = getattr(tk, "fast_info", None)
+            if fast is not None:
+                p = getattr(fast, "last_price", None) or getattr(fast, "regular_market_price", None)
+                if p is not None and not np.isnan(p) and float(p) > 0:
+                    return float(p)
+            info = getattr(tk, "info", None)
+            if info:
+                p = info.get("regularMarketPrice") or info.get("currentPrice")
+                if p is not None and not np.isnan(p) and float(p) > 0:
+                    return float(p)
+        except Exception:
+            continue
+    return None
+
+
 def fetch_hk_macro_regime() -> dict[str, Any]:
     """Evaluate HSI 200-day regime and US 10Y Treasury yield liquidity conditions."""
     try:
@@ -534,11 +557,14 @@ def fetch_hk_macro_regime() -> dict[str, Any]:
             hsi, _ = safe_download_ohlcv("0700.HK", period="1y", min_rows=200)
 
         if hsi is not None and len(hsi) >= 200:
-            hsi_close = float(hsi['Close'].iloc[-1])
+            spot_hsi = fetch_realtime_spot_price("^HSI")
+            hsi_close = float(spot_hsi) if (spot_hsi is not None and spot_hsi > 0) else float(hsi['Close'].iloc[-1])
             hsi_sma200 = float(hsi['Close'].rolling(200).mean().iloc[-1])
             hsi_vol20 = float(hsi['Close'].pct_change().rolling(20).std().iloc[-1] * np.sqrt(252))
         else:
-            hsi_close, hsi_sma200, hsi_vol20 = 18000.0, 18000.0, 0.22
+            spot_hsi = fetch_realtime_spot_price("^HSI")
+            hsi_close = float(spot_hsi) if (spot_hsi is not None and spot_hsi > 0) else 18000.0
+            hsi_sma200, hsi_vol20 = 18000.0, 0.22
 
         tnx = yf.download("^TNX", period="1mo", progress=False, timeout=10)
         if isinstance(tnx.columns, pd.MultiIndex):
@@ -958,7 +984,8 @@ def generate_day_trading_signal(
         decision_close_adj = float(close.iloc[dec_idx])
         prev_decision_close_adj = float(close.iloc[prev_dec_idx])
         decision_price_raw = float(raw_close_s.iloc[dec_idx])
-        latest_spot_raw = float(raw_close_s.iloc[-1])
+        realtime_spot = fetch_realtime_spot_price(successful_ticker)
+        latest_spot_raw = float(realtime_spot) if (realtime_spot is not None and realtime_spot > 0) else float(raw_close_s.iloc[-1])
         next_bar_open_raw = float(raw_open_s.iloc[-1]) if len(df) >= 2 else decision_price_raw
 
         tr = pd.concat([
@@ -1155,7 +1182,8 @@ def analyze_stock_trend(ticker: str) -> tuple[dict[str, Any] | None, str | None]
         df['RSI'] = compute_wilder_rsi(close, 14)
 
         dec_idx = -2 if len(df) >= 3 else -1
-        spot_price_raw = float(raw_close.iloc[-1])
+        realtime_spot = fetch_realtime_spot_price(successful_ticker)
+        spot_price_raw = float(realtime_spot) if (realtime_spot is not None and realtime_spot > 0) else float(raw_close.iloc[-1])
         decision_price_raw = float(raw_close.iloc[dec_idx])
         next_open_raw = float(raw_open.iloc[-1])
 

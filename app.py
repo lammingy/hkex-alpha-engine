@@ -488,12 +488,12 @@ inject_terminal_and_portal_css()
 # ==========================================
 # Cached Quantitative Data Pipelines
 # ==========================================
-@st.cache_data(ttl=300, show_spinner=False)
+@st.cache_data(ttl=60, show_spinner=False)
 def cached_macro_regime() -> dict:
     return fetch_hk_macro_regime()
 
 
-@st.cache_data(ttl=300, show_spinner=False)
+@st.cache_data(ttl=60, show_spinner=False)
 def cached_day_trading_signal(
     ticker: str,
     min_adv_hkd: float,
@@ -512,7 +512,7 @@ def cached_day_trading_signal(
     )
 
 
-@st.cache_data(ttl=300, show_spinner=False)
+@st.cache_data(ttl=60, show_spinner=False)
 def cached_stock_trend(ticker: str):
     return analyze_stock_trend(ticker)
 
@@ -635,6 +635,11 @@ with st.sidebar:
         if st.button("🚀 直接進入量化分析主終端", use_container_width=True, type="primary"):
             st.session_state.entered_main_terminal = True
             st.rerun()
+
+    if st.button("🔄 立即強制重整最新即時報價", use_container_width=True):
+        st.cache_data.clear()
+        st.toast("⚡ 已強制清除所有快取，正在向市場重新抓取最新即時報價！")
+        st.rerun()
 
     st.markdown("#### 🎯 單股追蹤標的")
     preset_t = st.selectbox(
